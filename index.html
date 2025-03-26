@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mood Music Generator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        #input-container {
+            margin-bottom: 20px;
+        }
+
+        #playlist-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #playlist-iframe {
+            width: 560px;
+            height: 315px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mood Music Generator</h1>
+
+    <div id="input-container">
+        <label for="mood-activity">Enter your mood or activity:</label>
+        <input type="text" id="mood-activity">
+        <button onclick="generatePlaylist()">Generate Playlist</button>
+    </div>
+
+    <div id="playlist-container">
+        <div id="playlist-iframe-container"></div>
+    </div>
+
+    <script>
+        function generatePlaylist() {
+            const moodActivity = document.getElementById("mood-activity").value;
+            //replace with your actual API key and search parameters.
+            const apiKey = "YOUR_YOUTUBE_API_KEY"; //You'll need a youtube api key for this.
+            const searchTerms = moodActivity + " music playlist"; //add "music playlist" to the search.
+            const playlistContainer = document.getElementById("playlist-iframe-container");
+
+            //Basic Example using youtube search. More robust solutions would use a backend to handle API calls.
+            //This example uses a very basic search, and displays the first returned video as a playlist.
+            fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${searchTerms}&type=video&key=${apiKey}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.items && data.items.length > 0) {
+                        const videoId = data.items[0].id.videoId;
+                        playlistContainer.innerHTML = `<iframe id="playlist-iframe" src="https://www.youtube.com/embed/${videoId}?playlist=${videoId}" frameborder="0" allowfullscreen></iframe>`;
+                    } else {
+                        playlistContainer.innerHTML = "<p>No playlist found.</p>";
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching playlist:", error);
+                    playlistContainer.innerHTML = "<p>Error generating playlist.</p>";
+                });
+        }
+    </script>
+</body>
+</html>
