@@ -1,73 +1,250 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Mood Music Generator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Music Player</title>
     <style>
         body {
             font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
             margin: 0;
-            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #121212; /* Dark theme default */
+            color: #fff;
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        #input-container {
+        .light-mode {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .player-container {
+            width: 90%;
+            max-width: 600px;
+            padding: 20px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .album-art {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+        }
+
+        .album-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .song-info {
+            text-align: center;
             margin-bottom: 20px;
         }
 
-        #playlist-container {
-            margin-top: 20px;
-            text-align: center;
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        #playlist-iframe {
-            width: 560px;
-            height: 315px;
+        .controls button {
+            background: none;
             border: none;
+            font-size: 24px;
+            color: #fff;
+            margin: 0 10px;
+            cursor: pointer;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background-color: #333;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .progress {
+            height: 100%;
+            width: 0%;
+            background-color: #007bff;
+            border-radius: 5px;
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .volume-slider {
+            width: 80%;
+        }
+
+        .playlist {
+            list-style: none;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .playlist li {
+            padding: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .playlist li:hover {
+            background-color: #2a2a2a;
+        }
+
+        .playlist li.playing {
+            background-color: #007bff;
+            color: white;
+        }
+        .theme-toggle{
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <h1>Mood Music Generator</h1>
-
-    <div id="input-container">
-        <label for="mood-activity">Enter your mood or activity:</label>
-        <input type="text" id="mood-activity">
-        <button onclick="generatePlaylist()">Generate Playlist</button>
-    </div>
-
-    <div id="playlist-container">
-        <div id="playlist-iframe-container"></div>
+    <button class="theme-toggle">🌙</button>
+    <div class="player-container">
+        <div class="album-art">
+            <img id="album-image" src="placeholder.jpg" alt="Album Art">
+        </div>
+        <div class="song-info">
+            <h2 id="song-title">Song Title</h2>
+            <p id="artist-name">Artist Name</p>
+        </div>
+        <div class="progress-container">
+            <div class="progress" id="progress"></div>
+        </div>
+        <div class="controls">
+            <button id="prev">⏮️</button>
+            <button id="play">▶️</button>
+            <button id="next">⏭️</button>
+            <button id="shuffle">🔀</button>
+            <button id="repeat">🔁</button>
+        </div>
+        <div class="volume-container">
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="1" class="volume-slider">
+        </div>
+        <ul class="playlist" id="playlist">
+            </ul>
+        <audio id="audio" src=""></audio>
     </div>
 
     <script>
-        function generatePlaylist() {
-            const moodActivity = document.getElementById("mood-activity").value;
-            //replace with your actual API key and search parameters.
-            const apiKey = "YOUR_YOUTUBE_API_KEY"; //You'll need a youtube api key for this.
-            const searchTerms = moodActivity + " music playlist"; //add "music playlist" to the search.
-            const playlistContainer = document.getElementById("playlist-iframe-container");
+        const audio = document.getElementById('audio');
+        const playBtn = document.getElementById('play');
+        const prevBtn = document.getElementById('prev');
+        const nextBtn = document.getElementById('next');
+        const shuffleBtn = document.getElementById('shuffle');
+        const repeatBtn = document.getElementById('repeat');
+        const progressContainer = document.querySelector('.progress-container');
+        const progress = document.getElementById('progress');
+        const songTitle = document.getElementById('song-title');
+        const artistName = document.getElementById('artist-name');
+        const albumImage = document.getElementById('album-image');
+        const volumeSlider = document.getElementById('volume');
+        const playlistElement = document.getElementById('playlist');
+        const body = document.body;
+        const themeToggle = document.querySelector('.theme-toggle');
 
-            //Basic Example using youtube search. More robust solutions would use a backend to handle API calls.
-            //This example uses a very basic search, and displays the first returned video as a playlist.
-            fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${searchTerms}&type=video&key=${apiKey}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.items && data.items.length > 0) {
-                        const videoId = data.items[0].id.videoId;
-                        playlistContainer.innerHTML = `<iframe id="playlist-iframe" src="https://www.youtube.com/embed/${videoId}?playlist=${videoId}" frameborder="0" allowfullscreen></iframe>`;
-                    } else {
-                        playlistContainer.innerHTML = "<p>No playlist found.</p>";
-                    }
-                })
-                .catch(error => {
-                    console.error("Error fetching playlist:", error);
-                    playlistContainer.innerHTML = "<p>Error generating playlist.</p>";
-                });
+        let songs = [
+            { title: 'Song 1', artist: 'Artist 1', src: 'song1.mp3', img: 'album1.jpg' },
+            { title: 'Song 2', artist: 'Artist 2', src: 'song2.mp3', img: 'album2.jpg' },
+            { title: 'Song 3', artist: 'Artist 3', src: 'song3.mp3', img: 'album3.jpg' }
+        ];
+
+        let songIndex = 0;
+        let isPlaying = false;
+        let isShuffled = false;
+        let isRepeated = false;
+
+        function loadSong(song) {
+            songTitle.textContent = song.title;
+            artistName.textContent = song.artist;
+            audio.src = song.src;
+            albumImage.src = song.img;
         }
-    </script>
-</body>
-</html>
+
+        function playSong() {
+            isPlaying = true;
+            audio.play();
+            playBtn.textContent = '⏸️';
+        }
+
+        function pauseSong() {
+            isPlaying = false;
+            audio.pause();
+            playBtn.textContent = '▶️';
+        }
+
+        function nextSong() {
+            songIndex = (songIndex + 1) % songs.length;
+            loadSong(songs[songIndex]);
+            playSong();
+        }
+
+        function prevSong() {
+            songIndex = (songIndex - 1 + songs.length) % songs.length;
+            loadSong(songs[songIndex]);
+            playSong();
+        }
+
+        function shuffleSongs() {
+            isShuffled = !isShuffled;
+            shuffleBtn.classList.toggle('active', isShuffled);
+        }
+
+        function repeatSong() {
+            isRepeated = !isRepeated;
+            repeatBtn.classList.toggle('active', isRepeated);
+        }
+
+        function updateProgress(e) {
+            const { duration, currentTime } = e.srcElement;
+            const progressPercent = (currentTime / duration) * 100;
+            progress.style.width = `${progressPercent}%`;
+        }
+
+        function setProgress(e) {
+            const width = this.clientWidth;
+            const clickX = e.offsetX;
+            const duration = audio.duration;
+            audio.currentTime = (clickX / width) * duration;
+        }
+
+        function updateVolume() {
+            audio.volume = volumeSlider.value;
+        }
+
+        function updatePlaylist() {
+            playlistElement.innerHTML = '';
+            songs.forEach((song, index) => {
+                const li = document.createElement('li');
+                li.textContent = song.title;
+                li.addEventListener('click', () => {
+                    songIndex = index;
